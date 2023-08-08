@@ -1,0 +1,156 @@
+<html>
+
+<head>
+    <title>Digital Fortress Visitor Log</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+    
+    <body>
+        <h1>
+            Digital Fortress Visitor Log
+        </h1>
+
+        <div id="root"></div>
+
+        <script type="text/babel">
+            const Visitors = (props) => {
+                const listVisitors = Visitors.map((visitor) => <li onClick={props.onClick} key={visitor.fname}>{visitor.fname}</li>);
+                
+                return <ul>{listVisitors}</ul>
+            }
+            
+            const VisitorDetail = (props) => {
+                return (
+                    <div>
+                        <h3>Visitor Details</h3>
+                        
+                        <form>
+                            <b> First Name:</b> <input type="text" name="fname" value={props.visitor.fname || ""} onChange={props.handleChange} /> <br />
+                            <b>Last Name:</b> <input type="text" name="lname" value={props.visitor.lname || ""} onChange={props.handleChange} /> <br />
+                            <b>Time In:</b> <input type="text" name="timein" value={props.visitor.timein || ""} onChange={props.handleChange}/> <br />
+                            <b>Time Out:</b> <input type="text" name="timeout" value={props.visitor.timeout || ""} onChange={props.handleChange}/> <br />
+                            <b>Date:</b> <input type="text" name="date" value={props.visitor.date || ""} onChange={props.handleChange}/> <br />
+                            <b>Company:</b> <input type="text" name="company" value={props.visitor.company || ""} onChange={props.handleChange}/> <br />
+                        </form>
+
+                        <button name="timein" onClick={props.saveTimeIn}>Log Time In</button>&nbsp;
+                        <button name="clear" onClick={props.clearForm}>Clear</button>&nbsp;
+                        <button name="timeout" onClick={props.saveTimeOut}>Log Time Out</button>&nbsp;
+                    </div>
+                )                
+            }
+            
+            const Home = (props) => {
+                const [visitors, setVisitors] = React.useState(props.data);
+                const [currentVisitor, setCurrentVisitor] = React.useState({});
+
+                React.useEffect(() => {
+                    const fetchData = async () => {
+                        fetch("/api/visitors").then(res => res.json())
+                            .then((json) => {
+                                setVisitors(json);
+                            })
+                    }    
+                    fetchData()
+                }, []);
+
+                const selectVisitor = (event) => {
+                    const found = visitors.find((visitor) => {
+                        return visitor.lname === event.target.innerText;
+                    });
+                    setCurrentVisitor(found);
+                }
+
+                const clearForm = () => {
+                    setCurrentVisitor({});
+                }
+
+                const saveTimeIn = () => {
+                    if(!currentVisitor.lname) {
+                        return;
+                    }
+                    fetch("/api/add/", {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentVisitor)
+                    })
+                    .then(res => res.json())
+                    .then((data) => {
+                        if(!currentVisitor.lname) {
+                            currentVisitor.lname = data.lname;
+                            setCurrentVisitor(currentVisitor);
+                            let newVisitors = [...visitors];
+                            newVisitors.push(currentVisitors);
+                            setVisitors(newVisitors);
+                        }
+                    })
+                }
+
+                const saveTimeOut = () => {
+                    if(!currentVisitor.lname) {
+                        return;
+                    }
+                    fetch("/api/add/", {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentVisitor)
+                    })
+                    .then(res => res.json())
+                    .then((data) => {
+                        if(!currentVisitor.lname) {
+                            currentVisitor.lname = data.lname;
+                            setCurrentVisitor(currentVisitor);
+                            let newVisitors = [...visitors];
+                            newVisitors.push(currentVisitors);
+                            setVisitors(newVisitors);
+                        }
+                    })
+                }
+
+                const deleteVisitor = () => {
+                    let name = currentVisitor.lname;
+                    fetch(`/api/delete/${lname}`)
+                    .then(res => res.json())
+                    .then((data) => {
+                        const newVisitors = visitors.filter((visitor) => {
+                            return visitor.lname !== lname;
+                        });
+                        setVisitors(newVisitors);
+                        setCurrentVisitor({})
+                    });
+                }
+
+                const handleChange = (event) => {
+                    let newVisitor= { ...currentVisitor };
+                    newVisitor[event.target.lname] = event.target.value;
+                    setCurrentVisitor(newVisitor);
+
+                    visitors.find((visitor, index) => {
+                        if(visitor.lname == newVisitor.lname) {
+                           visitors[index] = newVisitor;
+                            setVisitors(visitors);
+                        }
+                    })
+                }
+                
+                return (
+                    <div>
+                        <Visitors visitors={visitors} onClick={selectVisitor}/>
+                        <VisitorDetail 
+                            visitor={currentVisitor}
+                            handleChange={handleChange}
+                            clearForm={clearForm}
+                            saveTimeIn={saveTimeIn}
+                            saveTimeOut={saveTimeOut}/>
+                    </div>
+                    );
+            }
+                
+            const visitors = <%- visitors %>;
+            ReactDOM.render(<Home data={visitors} />, document.getElementById('root'));
+            
+        </script>
+    </body>
+</html>
